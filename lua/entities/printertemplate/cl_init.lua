@@ -342,6 +342,7 @@ net.Receive("entities.printertemplate.ui", function()
 
     if entity.printer_cfg.speedUpgrade == true then
         countAvalUpgr = countAvalUpgr + 1
+
     end
     if entity.printer_cfg.printUpgrade == true then
         countAvalUpgr = countAvalUpgr + 1
@@ -359,8 +360,14 @@ net.Receive("entities.printertemplate.ui", function()
     if entity.printer_cfg.speedUpgrade == true then
 
         local u_speed = vgui.Create("DPanel", buttonMenu)
-        u_speed:SetPos(UPGRADE_LOCATIONS[1].x, UPGRADE_LOCATIONS[1].y)
-        u_speed:SetSize(bw*0.45, bh*0.25)
+        if countAvalUpgr == 1 then
+            u_speed:SetPos(0, UPGRADE_LOCATIONS[1].y)
+            u_speed:SetSize(bw*0.90, ph*0.48*0.25)
+            buttonBG:SetSize(pw, ph*0.48 / 3)
+        else
+            u_speed:SetPos(UPGRADE_LOCATIONS[1].x, UPGRADE_LOCATIONS[1].y)
+            u_speed:SetSize(bw*0.45, ph*0.48*0.25)
+        end
         u_speed.colorLerp = 0
         u_speed.Paint = function(self, w, h)
             if(self:IsHovered()) then
@@ -470,8 +477,13 @@ net.Receive("entities.printertemplate.ui", function()
     if entity.printer_cfg.printUpgrade == true then
 
         local u_amount = vgui.Create("DPanel", buttonMenu)
-        u_amount:SetPos(UPGRADE_LOCATIONS[1].x, UPGRADE_LOCATIONS[1].y)
-        u_amount:SetSize(bw*0.45, bh*0.25)
+        if countAvalUpgr == 3 then
+            u_amount:SetPos(0, UPGRADE_LOCATIONS[1].y)
+            u_amount:SetSize(bw*0.90, bh*0.25)
+        else
+            u_amount:SetPos(UPGRADE_LOCATIONS[1].x, UPGRADE_LOCATIONS[1].y)
+            u_amount:SetSize(bw*0.45, bh*0.25)
+        end
         u_amount.colorLerp = 0
         u_amount.Paint = function(self, w, h)
             if(self:IsHovered()) then

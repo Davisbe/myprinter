@@ -20,13 +20,13 @@ printer[1] = {
 
     -- How much money will the printer print each time. First number is the
     -- print time when no upgrades are bought. Next 5 numbers are for each new upgrade
-    ["printUpgrade"] = true,
+    ["printUpgrade"] = false,
     ["printUpgradeArray"] = {100, 140, 160, 180, 200, 250},
     
 
     --Storage capacaty. The same idea applies here as for the previous two
     --(first number is the storage space with no upgrades etc.) ----------------
-    ["storageUpgrade"] = true,
+    ["storageUpgrade"] = false,
     ["storageUpgradeArray"] = {10000, 15000, 17500, 20000, 22500, 30000},
     
 
@@ -48,6 +48,6 @@ printer[1] = {
     -- Prices for each of the 5 "Storage" upgrades -----------------------------
     ["storagePriceArray"] = {3000, 3500, 4000, 4500, 6000},
 
-    ["lockUpgrade"] = true,
+    ["lockUpgrade"] = false,
     ["lockPrice"] = 20000,
 }
