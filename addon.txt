@@ -1,0 +1,11 @@
+"AddonInfo"
+{
+    "name"              "DarkRP printer by Arro"
+    "version"           "1"
+    "up_date"           "00/00/00"
+    "author_name"       "Arro"
+    "author_email"      ""
+    "author_url"        ""
+    "info"              "A mod with which you can modify DarkRP"
+    "override"          "0"
+}
