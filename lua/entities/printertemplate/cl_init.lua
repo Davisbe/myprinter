@@ -278,7 +278,7 @@ net.Receive("entities.printertemplate.ui", function()
     PrinterPanel:ShowCloseButton( false ) -- Show the close button?
     PrinterPanel:MakePopup() -- Show the frame
     PrinterPanel.Paint = function(self, w, h)
-        draw.RoundedBox(0, 0, h * 0.05, w, h * 0.95, Color(40, 40, 40))
+        draw.RoundedBox(0, 0, ScrH() * 0.5 * 0.05, w, ScrH() * 0.5 * 0.95, Color(40, 40, 40))
     end
 
     local pw, ph = PrinterPanel:GetSize()
@@ -297,7 +297,7 @@ net.Receive("entities.printertemplate.ui", function()
     local bgw, bgh = buttonBG:GetSize()
 
     local buttonMenu = vgui.Create("DPanel", buttonBG)
-    buttonMenu:SetPos(bgw * 0.075, 0)
+    buttonMenu:SetPos(bgw * 0.075, ph * 0.05)
     buttonMenu:SetSize(bgw * 0.85, bgh)
     buttonMenu.Paint = function(self, w, h)
 
@@ -317,7 +317,7 @@ net.Receive("entities.printertemplate.ui", function()
     if entity.printer_cfg.storageUpgrade == true then
         countAvalUpgr = countAvalUpgr + 1
     end
-    if entity.printer_cfg.healthUpgrade == true then
+    if entity.printer_cfg.lockUpgrade == true then
         countAvalUpgr = countAvalUpgr + 1
     end
 
@@ -327,66 +327,77 @@ net.Receive("entities.printertemplate.ui", function()
     UPGRADE_LOCATIONS[1] = {
         ["x"] = 0,
         ["y"] = 0,
-        ["used"] = false,
-        ["buttonBG"] = {pw, ph*0.48/3},
-        ["button"] = {pw*0.90, ph*0.48*0.25},
+        ["buttonBGx"] = pw,
+        ["buttonBGy"] = ph*0.65/3,
     }
-    UPGRADE_LOCATIONS[2] = {
-        ["x"] = pw * 0.55,
-        ["y"] = 0,
-        ["used"] = false,
-        ["buttonBG"] = {pw, ph*0.48/3},
-        ["button"] = {pw*0.45, ph*0.48*0.25},
 
+    UPGRADE_LOCATIONS[2] = {
+        ["x"] = pw * 0.55 * 0.85,
+        ["y"] = 0,
+        ["buttonBGx"] = pw,
+        ["buttonBGy"] = ph*0.65/3,
     }
+
     UPGRADE_LOCATIONS[3] = {
         ["x"] = 0,
         ["y"] = ph*0.375*0.48,
-        ["used"] = false,
-        ["buttonBG"] = {pw, ph*0.48* 2/3},
-        ["button"] = {pw*0.90, ph*0.48*0.25},
-
+        ["buttonBGx"] = pw,
+        ["buttonBGy"] = ph*0.6* 2/3,
     }
+
     UPGRADE_LOCATIONS[4] = {
-        ["x"] = pw * 0.55,
+        ["x"] = pw * 0.55 * 0.85,
         ["y"] = ph*0.375*0.48,
-        ["used"] = false,
-        ["buttonBG"] = {pw, ph*0.48* 2/3},
-        ["button"] = {pw*0.45, ph*0.48*0.25},
-
+        ["buttonBGx"] = pw,
+        ["buttonBGy"] = ph*0.6* 2/3,
     }
+
     UPGRADE_LOCATIONS[5] = {
         ["x"] = 0,
         ["y"] = ph*0.75*0.48,
-        ["used"] = false,
-        ["buttonBG"] = {pw, ph*0.48},
-        ["button"] = {pw*0.90, ph*0.48*0.25},
-
+        ["buttonBGx"] = pw,
+        ["buttonBGy"] = ph*0.55,
     }
+
     UPGRADE_LOCATIONS[6] = {
-        ["x"] = pw * 0.55,
+        ["x"] = pw * 0.55 * 0.85,
         ["y"] = ph*0.75*0.48,
-        ["used"] = false,
-        ["buttonBG"] = {pw, ph*0.48},
-        ["button"] = {pw*0.45, ph*0.48*0.25},
-
+        ["buttonBGx"] = pw,
+        ["buttonBGy"] = ph*0.55,
     }
 
-    buttonBG.SetSize(UPGRADE_LOCATIONS[countAvalUpgr].buttonBG)
+
+    if countAvalUpgr % 2 == 0 then
+        for k, v in pairs(UPGRADE_LOCATIONS) do
+            UPGRADE_LOCATIONS[k].buttonX = pw*0.45*0.85        
+        end
+    else
+        for k, v in pairs(UPGRADE_LOCATIONS) do
+            if k ~= countAvalUpgr then
+                UPGRADE_LOCATIONS[k].buttonX = pw*0.45*0.85
+            else
+                UPGRADE_LOCATIONS[k].buttonX = pw*0.85
+            end     
+        end
+    end
+
+
+    buttonBG:SetSize(UPGRADE_LOCATIONS[countAvalUpgr].buttonBGx, UPGRADE_LOCATIONS[countAvalUpgr].buttonBGy)
     local bw, bh = buttonMenu:GetSize()
+    local bgw, bgh = buttonBG:GetSize()
 
     -- SPEED UPGRADE THING --
     local curCfg = 1
     if entity.printer_cfg.speedUpgrade == true then
+        local u_speed = vgui.Create("DPanel", buttonMenu)
         u_speed:SetPos(UPGRADE_LOCATIONS[curCfg].x, UPGRADE_LOCATIONS[curCfg].y)
-        u_speed:SetSize(UPGRADE_LOCATIONS[curCfg].button)
+        u_speed:SetSize(UPGRADE_LOCATIONS[curCfg].buttonX,  ph*0.48*0.25)
         u_speed.colorLerp = 0
-        
 
         local buyLabel1 = vgui.Create( "DLabel", u_speed )
-        buyLabel1:SetPos( bw*0.36, 0 )
+        buyLabel1:SetSize(pw*0.08, ph*0.12)
+        buyLabel1:SetPos(u_speed:GetSize()-buyLabel1:GetSize())
         buyLabel1:SetText( "" )
-        buyLabel1:SetSize(bw*0.09, bh*0.25)
         buyLabel1.buyLerp = 0
         buyLabel1:SetMouseInputEnabled( true )
         buyLabel1:SetCursor( "hand" )
@@ -399,98 +410,7 @@ net.Receive("entities.printertemplate.ui", function()
             net.SendToServer()
         end
 
-
-    curCfg = curCfg + 1
-
-    end
-
-    -- STORAGE UPGRADE THING --
-    if entity.printer_cfg.storageUpgrade == true then
-
-        local u_storage = vgui.Create("DPanel", buttonMenu)
-        u_storage:SetPos(UPGRADE_LOCATIONS[curCfg].x, UPGRADE_LOCATIONS[curCfg].y)
-        u_storage:SetSize(UPGRADE_LOCATIONS[curCfg].button)
-        u_storage.colorLerp = 0
-        
-        local buyLabel2 = vgui.Create( "DLabel", u_storage )
-        buyLabel2:SetPos( bw*0.36, 0 )
-        buyLabel2:SetText( "" )
-        buyLabel2:SetSize(bw*0.09, bh*0.25)
-        buyLabel2.buyLerp = 0
-        buyLabel2:SetMouseInputEnabled( true )
-        buyLabel2:SetCursor( "hand" )
-        
-
-        buyLabel2.DoClick = function()
-            net.Start("button1_logic")
-                net.WriteEntity(entity)
-                net.WriteString("buyLabel2")
-            net.SendToServer()
-        end
-
-    UPGRADE_LOCATIONS[curCfg].used = true
-    curCfg = curCfg + 1
-
-    end
-
-
-    -- PRINTING AMOUNT UPGRADE THING --
-    if entity.printer_cfg.printUpgrade == true then
-
-        local u_amount = vgui.Create("DPanel", buttonMenu)
-        u_amount:SetPos(UPGRADE_LOCATIONS[curCfg].x, UPGRADE_LOCATIONS[curCfg].y)
-        u_amount:SetSize(UPGRADE_LOCATIONS[curCfg].button)
-        u_amount.colorLerp = 0
-        
-        local buyLabel3 = vgui.Create( "DLabel", u_amount )
-        buyLabel3:SetPos( bw*0.36, 0 )
-        buyLabel3:SetText( "" )
-        buyLabel3:SetSize(bw*0.09, bh*0.25)
-        buyLabel3.buyLerp = 0
-        buyLabel3:SetMouseInputEnabled( true )
-        buyLabel3:SetCursor( "hand" )
-        
-
-        buyLabel3.DoClick = function()
-            net.Start("button1_logic")
-                net.WriteEntity(entity)
-                net.WriteString("buyLabel3")
-            net.SendToServer()
-        end
-
-    UPGRADE_LOCATIONS[curCfg].used = true
-    curCfg = curCfg + 1
-
-    end
-
-    -- LOCK UPGRADE THING --
-    if entity.printer_cfg.lockUpgrade == true then
-
-        local u_lock = vgui.Create("DPanel", buttonMenu)
-        u_lock:SetPos(UPGRADE_LOCATIONS[curCfg].x, UPGRADE_LOCATIONS[curCfg].y)
-        u_lock:SetSize(UPGRADE_LOCATIONS[curCfg].button)
-        u_lock.colorLerp = 0
-        
-        local buyLabel4 = vgui.Create( "DLabel", u_lock )
-        buyLabel4:SetPos( bw*0.36, 0 )
-        buyLabel4:SetText( "" )
-        buyLabel4:SetSize(bw*0.09, bh*0.25)
-        buyLabel4.buyLerp = 0
-        buyLabel4:SetMouseInputEnabled( true )
-        buyLabel4:SetCursor( "hand" )
-       
-        buyLabel4.DoClick = function()
-            net.Start("button2_logic")
-                net.WriteEntity(entity)
-            net.SendToServer()
-        end
-
-    UPGRADE_LOCATIONS[curCfg].used = true
-
-    end
-
-
- u_speed.Paint = function(self, w, h)
+        u_speed.Paint = function(self, w, h)
         if(self:IsHovered()) then
             self.colorLerp = Lerp(5 * FrameTime(), self.colorLerp, 20)
         else
@@ -500,9 +420,9 @@ net.Receive("entities.printertemplate.ui", function()
         draw.RoundedBox(0, 0, 0, w, h, Color(self.colorLerp, 100+self.colorLerp, 125+self.colorLerp))
         draw.DrawText("Speed", "PanelButtonFont", w / 2, h * 0.07, Color(255, 255, 255), 1, 1)
         draw.DrawText("Upgraded:"..(entity:GetButtonOne() - 1).."/5", "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
-    end
+        end
 
-buyLabel1.Paint = function(self, w, h)
+        buyLabel1.Paint = function(self, w, h)
             local parent = self:GetParent()
             local cw, cy = parent:CursorPos()
             local posw, posy = parent:GetPos()
@@ -520,7 +440,38 @@ buyLabel1.Paint = function(self, w, h)
 
         end
 
-u_storage.Paint = function(self, w, h)
+
+        curCfg = curCfg + 1
+
+    end
+
+
+    -- STORAGE UPGRADE THING --
+    if entity.printer_cfg.storageUpgrade == true then
+
+        local u_storage = vgui.Create("DPanel", buttonMenu)
+        u_storage:SetPos(UPGRADE_LOCATIONS[curCfg].x, UPGRADE_LOCATIONS[curCfg].y)
+        u_storage:SetSize(UPGRADE_LOCATIONS[curCfg].buttonX,  ph*0.48*0.25)
+        u_storage.colorLerp = 0
+        
+        local buyLabel2 = vgui.Create( "DLabel", u_storage )
+        buyLabel2:SetSize(pw*0.08, ph*0.12)
+        buyLabel2:SetPos(u_storage:GetSize()-buyLabel2:GetSize())
+        buyLabel2:SetText( "" )
+        buyLabel2.buyLerp = 0
+        buyLabel2:SetMouseInputEnabled( true )
+        buyLabel2:SetCursor( "hand" )
+        
+
+        buyLabel2.DoClick = function()
+            net.Start("button1_logic")
+                net.WriteEntity(entity)
+                net.WriteString("buyLabel2")
+            net.SendToServer()
+        end
+
+
+        u_storage.Paint = function(self, w, h)
              if(self:IsHovered()) then
                 self.colorLerp = Lerp(5 * FrameTime(), self.colorLerp, 20)
             else
@@ -530,8 +481,9 @@ u_storage.Paint = function(self, w, h)
             draw.RoundedBox(0, 0, 0, w, h, Color(self.colorLerp, 100+self.colorLerp, 125+self.colorLerp))
             draw.DrawText("Storage", "PanelButtonFont", w / 2, h * 0.07, Color(255, 255, 255), 1, 1)
             draw.DrawText("Upgraded:"..(entity:GetButtonTwo() - 1).."/5", "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
-        end
-buyLabel2.Paint = function(self, w, h)
+            end
+
+        buyLabel2.Paint = function(self, w, h)
             local parent = self:GetParent()
             local parent2 = parent:GetParent()
             local cw, cy = parent2:CursorPos()
@@ -549,7 +501,38 @@ buyLabel2.Paint = function(self, w, h)
             draw.RoundedBox(0, w*1.01 - self.buyLerp, 0, w, h, Color(0, 220, 30))
 
         end
- u_amount.Paint = function(self, w, h)
+
+        curCfg = curCfg + 1
+
+    end
+
+
+    -- PRINTING AMOUNT UPGRADE THING --
+    if entity.printer_cfg.printUpgrade == true then
+
+        local u_amount = vgui.Create("DPanel", buttonMenu)
+        u_amount:SetPos(UPGRADE_LOCATIONS[curCfg].x, UPGRADE_LOCATIONS[curCfg].y)
+        u_amount:SetSize(UPGRADE_LOCATIONS[curCfg].buttonX,  ph*0.48*0.25)
+        u_amount.colorLerp = 0
+        
+        local buyLabel3 = vgui.Create( "DLabel", u_amount )
+        buyLabel3:SetSize(pw*0.08, ph*0.12)
+        buyLabel3:SetPos(u_amount:GetSize()-buyLabel3:GetSize())
+        buyLabel3:SetText( "" )
+        buyLabel3.buyLerp = 0
+        buyLabel3:SetMouseInputEnabled( true )
+        buyLabel3:SetCursor( "hand" )
+        
+
+        buyLabel3.DoClick = function()
+            net.Start("button1_logic")
+                net.WriteEntity(entity)
+                net.WriteString("buyLabel3")
+            net.SendToServer()
+        end
+
+
+        u_amount.Paint = function(self, w, h)
             if(self:IsHovered()) then
                 self.colorLerp = Lerp(5 * FrameTime(), self.colorLerp, 20)
             else
@@ -559,8 +542,9 @@ buyLabel2.Paint = function(self, w, h)
             draw.RoundedBox(0, 0, 0, w, h, Color(self.colorLerp, 100+self.colorLerp, 125+self.colorLerp))
             draw.DrawText("Print amount", "PanelButtonFont", w / 2, h * 0.07, Color(255, 255, 255), 1, 1)
             draw.DrawText("Upgraded:"..(entity:GetButtonThree() - 1).."/5", "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
-        end
- buyLabel3.Paint = function(self, w, h)
+            end
+
+        buyLabel3.Paint = function(self, w, h)
             local parent = self:GetParent()
             local parent2 = parent:GetParent()
             local cw, cy = parent2:CursorPos()
@@ -577,8 +561,37 @@ buyLabel2.Paint = function(self, w, h)
             
             draw.RoundedBox(0, w*1.01 - self.buyLerp, 0, w, h, Color(0, 220, 30))
 
+            end
+
+
+        curCfg = curCfg + 1
+
+    end
+
+    -- LOCK UPGRADE THING --
+    if entity.printer_cfg.lockUpgrade == true then
+
+        local u_lock = vgui.Create("DPanel", buttonMenu)
+        u_lock:SetPos(UPGRADE_LOCATIONS[curCfg].x, UPGRADE_LOCATIONS[curCfg].y)
+        u_lock:SetSize(UPGRADE_LOCATIONS[curCfg].buttonX,  ph*0.48*0.25)
+        u_lock.colorLerp = 0
+        
+        local buyLabel4 = vgui.Create( "DLabel", u_lock )
+        buyLabel4:SetSize(pw*0.08, ph*0.12)
+        buyLabel4:SetPos(u_lock:GetSize()-buyLabel4:GetSize())
+        buyLabel4:SetText( "" )
+        buyLabel4.buyLerp = 0
+        buyLabel4:SetMouseInputEnabled( true )
+        buyLabel4:SetCursor( "hand" )
+       
+        buyLabel4.DoClick = function()
+            net.Start("button2_logic")
+                net.WriteEntity(entity)
+            net.SendToServer()
         end
-u_lock.Paint = function(self, w, h)
+
+
+        u_lock.Paint = function(self, w, h)
 
             if(self:IsHovered()) then
                 self.colorLerp = Lerp(5 * FrameTime(), self.colorLerp, 20)
@@ -590,8 +603,9 @@ u_lock.Paint = function(self, w, h)
             draw.DrawText("Lock", "PanelButtonFont", w / 2, h * 0.07, Color(255, 255, 255), 1, 1)
             draw.DrawText("Upgraded: "..entity:GetButtonFour().."/1", "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
 
-        end
-buyLabel4.Paint = function(self, w, h)
+            end
+
+        buyLabel4.Paint = function(self, w, h)
             local parent = self:GetParent()
             local parent2 = parent:GetParent()
             local cw, cy = parent2:CursorPos()
@@ -609,6 +623,11 @@ buyLabel4.Paint = function(self, w, h)
             draw.RoundedBox(0, w*1.01 - self.buyLerp, 0, w, h, Color(0, 220, 30))
 
         end
+
+
+    end
+
+
 
     -- -- SILENT PRINTING UPGRADE THING --
     -- local u_silent = vgui.Create("DPanel", buttonMenu)
@@ -711,6 +730,7 @@ buyLabel4.Paint = function(self, w, h)
     -- end
 
 
+
     -- CLOSE BUTTON --
     ----------------------------------------------------------------------------
     local closeButton = vgui.Create("DButton", PrinterPanel)
@@ -726,11 +746,15 @@ buyLabel4.Paint = function(self, w, h)
         end
 
         draw.RoundedBox(0, 0, 0, w, h, Color(self.colorLerp, 145 + self.colorLerp, 200 + self.colorLerp))
-        draw.DrawText("Close", "PanelCloseFont", w / 2, h * 0.1, Color(255, 255, 255), 1, 1)
+        draw.DrawText("Close", "PanelCloseFont", w / 2, h * 0.15, Color(255, 255, 255), 1, 1)
     end
     closeButton.DoClick = function()
         PrinterPanel:Close()
     end
+
+    PrinterPanel:SetSize( ScrW() * 0.45, bgh + ph * 0.5) -- Size of the frame
+    PrinterPanel:Center() -- Position on the players screen
+    pw, ph = PrinterPanel:GetSize()
 
 end)
 
