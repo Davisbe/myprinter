@@ -33,12 +33,16 @@ hook.Add("playerBoughtCustomEntity", "penismanBuysPrinter", function(ply, entTab
     ent:CPPISetOwner(ply)
 end)
 
+
+
 function PrinterCFG(ent_info)
 
     local printer_id = scripted_ents.Get(ent_info:GetClass()).UniquePrinterID
     ent_info.printer_cfg = printer[printer_id]
 
 end
+
+
 
 function ENT:Initialize()
 
@@ -79,6 +83,8 @@ function ENT:Initialize()
 
 end
 
+
+
 function ENT:OnTakeDamage(dmg)
     if self.burningup then return end
 
@@ -94,6 +100,8 @@ function ENT:OnTakeDamage(dmg)
     end
 end
 
+
+
 function ENT:Destruct()
     local vPoint = self:GetPos()
     local effectdata = EffectData()
@@ -104,6 +112,8 @@ function ENT:Destruct()
     DarkRP.notify(self:CPPIGetOwner(), 1, 4, DarkRP.getPhrase("money_printer_exploded"))
 end
 
+
+
 function ENT:BurstIntoFlames()
     DarkRP.notify(self:CPPIGetOwner(), 0, 4, DarkRP.getPhrase("money_printer_overheating"))
     self.burningup = true
@@ -111,6 +121,8 @@ function ENT:BurstIntoFlames()
     self:Ignite(burntime, 0)
     timer.Simple(burntime, function() self:Fireball() end)
 end
+
+
 
 function ENT:Fireball()
     if not self:IsOnFire() then self.burningup = false return end
@@ -126,6 +138,7 @@ function ENT:Fireball()
     end
     self:Remove()
 end
+
 
 
 function ENT:Think()
@@ -148,7 +161,12 @@ function ENT:Think()
 
     end
 
+    print(self.sound)
+
+
 end
+
+
 
 function ENT:Use(act, call)
     if not IsValid( call ) or not call:IsPlayer() then return end
@@ -222,8 +240,8 @@ net.Receive("button1_logic", function(len, ply)
 
     if not IsValid(entity) then return end
 
-    -- If someone somehow sends a request to upgrade a printer that has the upgrade disabled,
-    -- it bans him and ends the function
+    -- If someone sends a request to upgrade a printer that has the upgrade disabled,
+    -- said someone gets banned
     if upgrade_str == "buyLabel1" and
         entity.printer_cfg.speedUpgrade == false then
         ply:Ban(0, false)
@@ -313,6 +331,8 @@ net.Receive("button1_logic", function(len, ply)
         net.Start("update_upgrade")
         net.Send(ply)
     end
+
+
 
 
 end)

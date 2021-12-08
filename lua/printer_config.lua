@@ -33,6 +33,9 @@ printer[1] = {
     -- Health upgrade levels ---------------------------------------------------
     ["healthUpgrade"] = false,
     ["healthUpgradeArray"] = {100, 150, 175, 200, 225, 250},
+
+    -- Silent printing upgrade levels ---------------------------------------------------
+    ["soundUpgrade"] = false,
     
 
     ------------------------ PRICE CONFIGS -------------------------------------
@@ -47,6 +50,9 @@ printer[1] = {
 
     -- Prices for each of the 5 "Storage" upgrades -----------------------------
     ["storagePriceArray"] = {3000, 3500, 4000, 4500, 6000},
+
+    -- Prices for each of the 2 "Silent printing" upgrades -----------------------------
+    ["sooundPriceArray"] = {3000, 3500},
 
     ["lockUpgrade"] = false,
     ["lockPrice"] = 20000,

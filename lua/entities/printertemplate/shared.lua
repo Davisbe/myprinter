@@ -6,7 +6,10 @@ ENT.PrintName = "Printer template"
 
 ENT.Spawnable = false
 
+-- used to create unique printers from the temlpate
 ENT.UniquePrinterID = 1
+
+
 
 function ENT:SetupDataTables()
 
@@ -20,6 +23,8 @@ function ENT:SetupDataTables()
     self:NetworkVar("Int", 5, "ButtonFive")
 
 end
+
+
 
 hook.Add( "InitPostEntity", "createNewPrinters", function()
 

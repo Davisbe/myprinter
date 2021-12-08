@@ -136,6 +136,8 @@ function UpgradeLevel(name, ent)
 
 end
 
+
+
 function UIButtonPressed(ent, upgrade_info, buttonMenu, bw, bh, i_spacing)
 
 
@@ -208,11 +210,15 @@ function UIButtonPressed(ent, upgrade_info, buttonMenu, bw, bh, i_spacing)
 
 end
 
+
+
 function ENT:Initialize()
 
     PrinterCFG(self)
 
 end
+
+
 
 function ENT:Draw()
 
@@ -260,6 +266,7 @@ function ENT:Draw()
 
 end
 
+
 --------------------------------------------------------------------------------
 -- PRINTER UPGRADE DFRAME --
 --------------------------------------------------------------------------------
@@ -306,7 +313,14 @@ net.Receive("entities.printertemplate.ui", function()
     end
 
 
-    local countAvalUpgr = 0
+    --[[
+    Everything below this is fucking shit. Idk how to do this shit so I just
+    did my best.
+    --]]
+
+
+    local countAvalUpgr = 0     -- used to determine the upgrade window
+                                -- layout of the buttons
 
     if entity.printer_cfg.speedUpgrade == true then
         countAvalUpgr = countAvalUpgr + 1
@@ -322,6 +336,7 @@ net.Receive("entities.printertemplate.ui", function()
     end
 
 
+    -- Defines the locations of the upgrade buttons
     local UPGRADE_LOCATIONS = {}
 
     UPGRADE_LOCATIONS[1] = {
@@ -367,6 +382,8 @@ net.Receive("entities.printertemplate.ui", function()
     }
 
 
+    -- if the amount of enabled upgrades is even, then the last
+    -- upgrade button will be the width of 2 upgrade buttons
     if countAvalUpgr % 2 == 0 then
         for k, v in pairs(UPGRADE_LOCATIONS) do
             UPGRADE_LOCATIONS[k].buttonX = pw*0.45*0.85        
@@ -404,6 +421,7 @@ net.Receive("entities.printertemplate.ui", function()
         
 
         buyLabel1.DoClick = function()
+            surface.PlaySound( "npc/overwatch/radiovoice/document.wav" )
             net.Start("button1_logic")
                 net.WriteEntity(entity)
                 net.WriteString("buyLabel1")
@@ -629,56 +647,6 @@ net.Receive("entities.printertemplate.ui", function()
 
 
 
-    -- -- SILENT PRINTING UPGRADE THING --
-    -- local u_silent = vgui.Create("DPanel", buttonMenu)
-    -- u_silent:SetPos(bw * 0.55, bh*0.375)
-    -- u_silent:SetSize(bw*0.45, bh*0.25)
-    -- u_silent.colorLerp = 0
-    -- u_silent.Paint = function(self, w, h)
-
-    --     if(self:IsHovered()) then
-    --         self.colorLerp = Lerp(5 * FrameTime(), self.colorLerp, 20)
-    --     else
-    --         self.colorLerp = Lerp(10*FrameTime(), self.colorLerp, 0)
-    --     end
-
-    --     draw.RoundedBox(0, 0, 0, w, h, Color(self.colorLerp, 100+self.colorLerp, 125+self.colorLerp))
-    --     draw.DrawText("Silent print", "PanelButtonFont", w / 2, h * 0.07, Color(255, 255, 255), 1, 1)
-    --     draw.DrawText("Upgraded: 0/1", "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
-    -- end
-    -- local buyLabel5 = vgui.Create( "DLabel", u_silent )
-    -- buyLabel5:SetPos( bw*0.36, 0 )
-    -- buyLabel5:SetText( "" )
-    -- buyLabel5:SetSize(bw*0.09, bh*0.25)
-    -- buyLabel5.buyLerp = 0
-    -- buyLabel5:SetMouseInputEnabled( true )
-    -- buyLabel5:SetCursor( "hand" )
-    -- buyLabel5.Paint = function(self, w, h)
-    --     local parent = self:GetParent()
-    --     local parent2 = parent:GetParent()
-    --     local cw, cy = parent2:CursorPos()
-    --     local posw, posy = parent:GetPos()
-    --     local sizew, sizey = parent:GetSize()
-    --     if (cw >= posw and
-    --         cy >= posy and
-    --         cw <= posw+sizew and
-    --         cy <= posy+sizey) then
-    --         self.buyLerp = Lerp(10 * FrameTime(), self.buyLerp, w)
-    --     else
-    --         self.buyLerp = Lerp(10 * FrameTime(), self.buyLerp, 0)
-    --     end
-        
-    --     draw.RoundedBox(0, w*1.01 - self.buyLerp, 0, w, h, Color(0, 220, 30))
-
-    -- end
-
-    -- buyLabel5.DoClick = function()
-    --     net.Start("button1_logic")
-    --         net.WriteEntity(entity)
-    --         net.WriteString("buyLabel5")
-    --     net.SendToServer()
-    -- end
-
     -- -- SO POLICE CANT TRACK YOUR PRINTER UPGRADE THING --
     -- local u_antipolice = vgui.Create("DPanel", buttonMenu)
     -- u_antipolice:SetPos(bw * 0.55, bh*0.75)
@@ -760,8 +728,9 @@ end)
 
 
 --------------------------------------------------------------------------------
--- NET SENDS AND RECEIVES --
+-- OTHER NET SENDS AND RECEIVES --
 --------------------------------------------------------------------------------
+
 net.Receive("printermessage_hint", function()
 
     local printerMessage = net.ReadString()
@@ -779,18 +748,24 @@ net.Receive("printermessage_hint", function()
 
 end)
 
-function testMaxMoney()
-    net.Start("givemaxmoney")
 
-        -- Sets max money for all player printers. USED FOR TESTS. DO NOT DELETE --
-        local target = LocalPlayer()
-        net.WriteEntity(target)
+--------------------------------------------------------------------------------
+-- OTHER --
+--------------------------------------------------------------------------------
 
-    net.SendToServer()
-end
-
+-- Refreshes the spawnlist, so the printers are visible
 hook.Add( "InitPostEntity", "refreshSpawnMenu", function()
 
     hook.GetTable()["OnGamemodeLoaded"]["CreateSpawnMenu"]()
 
 end)
+
+-- boop
+function testMaxMoney()
+    net.Start("givemaxmoney")
+
+        local target = LocalPlayer()
+        net.WriteEntity(target)
+
+    net.SendToServer()
+end
