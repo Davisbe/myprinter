@@ -33,7 +33,7 @@ hook.Add( "InitPostEntity", "createNewPrinters", function()
     local ENT_TABLE = {}
 
     -- looping through each printer confing and creating new tables, storing them in ENT_TABLE
-    for k, v in pairs(printer) do
+    for k, v in pairs(arroprinter) do
         -- gets a fresh copy of the printertemplate each time
         ENT_TABLE[k] = scripted_ents.Get("printertemplate")
 

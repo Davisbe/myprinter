@@ -12,8 +12,6 @@ util.AddNetworkString("entities.printertemplate.ui")
 util.AddNetworkString("givemaxmoney")
 util.AddNetworkString("printermessage_hint")
 util.AddNetworkString("button1_logic")
-util.AddNetworkString("button2_logic")
-util.AddNetworkString("update_upgrade")
 
 --------------------------------------------------------------------------------
 --INCLUDES
@@ -24,8 +22,6 @@ include("shared.lua")
 --------------------------------------------------------------------------------
 --MAIN CODE
 --------------------------------------------------------------------------------
-
--- Defines a printer's config as self.printer_cfg
 
 
 --------------Used to change the printer owner from world to ply----------------
@@ -38,7 +34,7 @@ end)
 function PrinterCFG(ent_info)
 
     local printer_id = scripted_ents.Get(ent_info:GetClass()).UniquePrinterID
-    ent_info.printer_cfg = printer[printer_id]
+    ent_info.printer_cfg = arroprinter[printer_id]
 
 end
 
@@ -57,7 +53,7 @@ function ENT:Initialize()
     self:SetButtonOne(1)--Upgrade levels|
     self:SetButtonTwo(1)--              |
     self:SetButtonThree(1)--            |
-    self:SetButtonFour(0)--             |
+    self:SetButtonFour(1)--             |
     self:SetButtonFive(1)--_____________|
     self.timer = CurTime()
     self.Locked = false -- used for the lock printer upgrade
@@ -145,23 +141,21 @@ function ENT:Think()
 
     if not IsValid(self) or self:IsOnFire() then return end
 
-    if CurTime() > self.timer + self.printer_cfg.speedUpgradeArray[self:GetButtonOne()] and
-        self:GetMoneyAmount() + self.printer_cfg.printUpgradeArray[self:GetButtonThree()] <=
-        self.printer_cfg.storageUpgradeArray[self:GetButtonTwo()] then
+    if CurTime() > self.timer + self.printer_cfg.upgrades.speedUpgrade.upgradeArray[self:GetButtonOne()] and
+        self:GetMoneyAmount() + self.printer_cfg.upgrades.printUpgrade.upgradeArray[self:GetButtonThree()] <=
+        self.printer_cfg.upgrades.storageUpgrade.upgradeArray[self:GetButtonTwo()] then
 
         self.timer = CurTime()
-        self:SetMoneyAmount(self:GetMoneyAmount() + self.printer_cfg.printUpgradeArray[self:GetButtonThree()])
+        self:SetMoneyAmount(self:GetMoneyAmount() + self.printer_cfg.upgrades.printUpgrade.upgradeArray[self:GetButtonThree()])
 
-    elseif CurTime() > self.timer + self.printer_cfg.speedUpgradeArray[self:GetButtonOne()] and
-        self:GetMoneyAmount() + self.printer_cfg.printUpgradeArray[self:GetButtonThree()] >
-        self.printer_cfg.storageUpgradeArray[self:GetButtonTwo()] then
+    elseif CurTime() > self.timer + self.printer_cfg.upgrades.speedUpgrade.upgradeArray[self:GetButtonOne()] and
+        self:GetMoneyAmount() + self.printer_cfg.upgrades.printUpgrade.upgradeArray[self:GetButtonThree()] >
+        self.printer_cfg.upgrades.storageUpgrade.upgradeArray[self:GetButtonTwo()] then
 
         self.timer = CurTime()
-        self:SetMoneyAmount(self.printer_cfg.storageUpgradeArray[self:GetButtonTwo()])
+        self:SetMoneyAmount(self.printer_cfg.upgrades.storageUpgrade.upgradeArray[self:GetButtonTwo()])
 
     end
-
-    print(self.sound)
 
 
 end
@@ -196,15 +190,15 @@ function ENT:Use(act, call)
         call == self:CPPIGetOwner() or
         self.Locked == false then
             local money = self:GetMoneyAmount()
-                self:SetMoneyAmount(0)
-                call:addMoney(money)
-                    if money > 0 then
-                        net.Start("printermessage_hint")
-                            net.WriteString("Collected $"..money.." from "..self.printer_cfg.name)
-                            net.WriteString("ambient/water/drip2.wav")
-                            net.WriteString("normal")
-                        net.Send(call)
-                    end
+            self:SetMoneyAmount(0)
+            call:addMoney(money)
+            if money > 0 then
+                net.Start("printermessage_hint")
+                    net.WriteString("Collected $"..money.." from "..self.printer_cfg.name)
+                    net.WriteString("ambient/water/drip2.wav")
+                    net.WriteString("normal")
+                net.Send(call)
+            end
         end
 
     end
@@ -237,162 +231,95 @@ net.Receive("button1_logic", function(len, ply)
 
     local entity = net.ReadEntity()
     local upgrade_str = net.ReadString()
+    local getButton = 0
+
 
     if not IsValid(entity) then return end
 
-    -- If someone sends a request to upgrade a printer that has the upgrade disabled,
-    -- said someone gets banned
-    if upgrade_str == "buyLabel1" and
-        entity.printer_cfg.speedUpgrade == false then
-        ply:Ban(0, false)
-        ply:Kick( [[Arro's printers - don't try to upgrade an upgrade that's disabled]] )
-        return
-    elseif upgrade_str == "buyLabel2" and
-        entity.printer_cfg.storageUpgrade == false then
-        ply:Ban(0, false)
-        ply:Kick( [[Arro's printers - don't try to upgrade an upgrade that's disabled]] )
-        return
-    elseif upgrade_str == "buyLabel3" and
-        entity.printer_cfg.printUpgrade == false then
-        ply:Ban(0, false)
-        ply:Kick( [[Arro's printers - don't try to upgrade an upgrade that's disabled]] )
-        return
+
+    if upgrade_str == "speedUpgrade" then
+        getButton = entity:GetButtonOne()
+    elseif upgrade_str == "storageUpgrade" then
+        getButton = entity:GetButtonTwo()
+    elseif upgrade_str == "printUpgrade" then
+        getButton = entity:GetButtonThree()
     end
 
 
-    -- the upgrade logic for the "Speed" upgrade--------------------------------
-    if upgrade_str == "buyLabel1" and
-        entity:GetButtonOne() >= 6 then
-        net.Start("printermessage_hint")
-            net.WriteString("Maximum upgrade level reached!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif entity:GetButtonOne() < 6 and
-        ply:getDarkRPVar("money") < entity.printer_cfg.speedPriceArray[entity:GetButtonOne()] and
-        upgrade_str == "buyLabel1" then
-        net.Start("printermessage_hint")
-            net.WriteString("Insufficient money for the speed upgrade!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif upgrade_str == "buyLabel1" and
-        entity:GetButtonOne() < 6 then
-        ply:addMoney(- entity.printer_cfg.speedPriceArray[entity:GetButtonOne()])
-        entity:SetButtonOne(entity:GetButtonOne() + 1)
-        net.Start("update_upgrade")
-        net.Send(ply)
-    end
+    for k, v in pairs(entity.printer_cfg.upgrades) do
+        -- If someone sends a request to upgrade a printer that has the upgrade disabled,
+        -- said someone gets banned
+        if upgrade_str == k and
+            v.enabled == false then
 
-    -- the upgrade logic for the "Storage" upgrade------------------------------
-    if upgrade_str == "buyLabel2" and
-        entity:GetButtonTwo() >= 6 then
-        net.Start("printermessage_hint")
-            net.WriteString("Maximum upgrade level reached!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif entity:GetButtonTwo() < 6 and
-        ply:getDarkRPVar("money") < entity.printer_cfg.storagePriceArray[entity:GetButtonTwo()] and
-        upgrade_str == "buyLabel2" then
-        net.Start("printermessage_hint")
-            net.WriteString("Insufficient money for the storage upgrade!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif upgrade_str == "buyLabel2" and
-        entity:GetButtonTwo() < 6 then
-        ply:addMoney(- entity.printer_cfg.storagePriceArray[entity:GetButtonTwo()])
-        entity:SetButtonTwo(entity:GetButtonTwo() + 1)
-        net.Start("update_upgrade")
-        net.Send(ply)
-    end
-
-    -- the upgrade logic for the "Print amount" upgrade ------------------------
-    if upgrade_str == "buyLabel3" and
-        entity:GetButtonThree() >= 6 then
-        net.Start("printermessage_hint")
-            net.WriteString("Maximum upgrade level reached!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif entity:GetButtonThree() < 6 and
-        ply:getDarkRPVar("money") < entity.printer_cfg.printPriceArray[entity:GetButtonThree()] and
-        upgrade_str == "buyLabel3" then
-        net.Start("printermessage_hint")
-            net.WriteString("Insufficient money for the print amount upgrade!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif upgrade_str == "buyLabel3" and
-        entity:GetButtonThree() < 6 then
-        ply:addMoney(- entity.printer_cfg.printPriceArray[entity:GetButtonThree()])
-        entity:SetButtonThree(entity:GetButtonThree() + 1)
-        net.Start("update_upgrade")
-        net.Send(ply)
-    end
+            ply:Ban(0, false)
+            ply:Kick( [[Arro's printers *script kiddie detected* - don't try to upgrade an upgrade that's disabled]] )
+        end
 
 
+        if upgrade_str ~= k or k == "lockUpgrade" then continue end
 
 
-end)
+        if getButton >= 6 then
+            net.Start("printermessage_hint")
+                net.WriteString("Maximum upgrade level reached!")
+                net.WriteString("buttons/button14.wav")
+                net.WriteString("error")
+            net.Send(ply)
+        elseif getButton < 6 and
+            ply:getDarkRPVar("money") < v.priceArray[getButton] then
+            net.Start("printermessage_hint")
+                net.WriteString("Insufficient money for the"..v.displayName.."upgrade!")
+                net.WriteString("buttons/button14.wav")
+                net.WriteString("error")
+            net.Send(ply)
+        else
+            ply:addMoney(- v.priceArray[getButton])
 
-net.Receive("button2_logic", function(len, ply)
+            if k == "speedUpgrade" then
+                entity:SetButtonOne(getButton + 1)
+            elseif k == "storageUpgrade" then
+                entity:SetButtonTwo(getButton + 1)
+            elseif k == "printUpgrade" then
+                entity:SetButtonThree(getButton + 1)
+            end
 
-    local entity = net.ReadEntity()
-
-    if not IsValid( ply ) or not ply:IsPlayer() then return end
-
-    -- If someone somehow sends a request to upgrade a printer that has the upgrade disabled,
-    -- it bans him and ends the function
-    if entity.printer_cfg.lockUpgrade == false then
-        ply:Ban(0, false)
-        ply:Kick( [[Arro's printers - don't try to upgrade an upgrade that's disabled]] )
-        return
+        end
     end
 
     -- the upgrade logic for the "Lock" upgrade --------------------------------
-    if entity:GetButtonFour() >= 1 and
-    ply == entity:CPPIGetOwner() then
-        net.Start("printermessage_hint")
-            net.WriteString("Maximum upgrade level reached!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif entity:GetButtonFour() < 1 and
-        ply == entity:CPPIGetOwner() and
-        ply:getDarkRPVar("money") < entity.printer_cfg.lockPrice then
-        net.Start("printermessage_hint")
-            net.WriteString("Insufficient money for the lock upgrade!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif entity:GetButtonFour() < 1 and
-        ply ~= entity:CPPIGetOwner() then
-        net.Start("printermessage_hint")
-            net.WriteString("Only the owner can lock the printer!")
-            net.WriteString("buttons/button14.wav")
-            net.WriteString("error")
-        net.Send(ply)
-    elseif ply == entity:CPPIGetOwner() then
-        ply:addMoney(- entity.printer_cfg.lockPrice)
-        entity:SetButtonFour(entity:GetButtonFour()+1)
-        entity.Locked = true
-        net.Start("printermessage_hint")
-            net.WriteString("You have locked your printer")
-            net.WriteString("ambient/levels/canals/drip1.wav")
-            net.WriteString("normal")
-        net.Send(ply)
-        net.Start("update_upgrade")
-        net.Send(ply)
+    if upgrade_str == "lockUpgrade" then
+        if entity:GetButtonFour() > 1 and
+        ply == entity:CPPIGetOwner() then
+            net.Start("printermessage_hint")
+                net.WriteString("Maximum upgrade level reached!")
+                net.WriteString("buttons/button14.wav")
+                net.WriteString("error")
+            net.Send(ply)
+        elseif entity:GetButtonFour() <= 1 and
+            ply == entity:CPPIGetOwner() and
+            ply:getDarkRPVar("money") < entity.printer_cfg.upgrades.lockUpgrade.priceArray[1] then
+            net.Start("printermessage_hint")
+                net.WriteString("Insufficient money for the Lock upgrade!")
+                net.WriteString("buttons/button14.wav")
+                net.WriteString("error")
+            net.Send(ply)
+        elseif entity:GetButtonFour() <= 1 and
+            ply ~= entity:CPPIGetOwner() then
+            net.Start("printermessage_hint")
+                net.WriteString("Only the owner can lock the printer!")
+                net.WriteString("buttons/button14.wav")
+                net.WriteString("error")
+            net.Send(ply)
+        elseif ply == entity:CPPIGetOwner() then
+            ply:addMoney(- entity.printer_cfg.upgrades.lockUpgrade.priceArray[1])
+            entity:SetButtonFour(entity:GetButtonFour()+1)
+            entity.Locked = true
+            net.Start("printermessage_hint")
+                net.WriteString("You have locked your printer")
+                net.WriteString("ambient/levels/canals/drip1.wav")
+                net.WriteString("normal")
+            net.Send(ply)
         end
-
-end)
-
-net.Receive("givemaxmoney", function(len, ply)
-
-    print(net.ReadEntity())
-    ply:Ban(0, false)
-    ply:Kick( [[lmao]] )
-
+    end
 end)
