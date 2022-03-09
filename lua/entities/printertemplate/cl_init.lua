@@ -145,44 +145,55 @@ function ENT:Draw()
 
     ang:RotateAroundAxis(ang:Up(), 90)
 
+
+    -- 3d2d --
+
+    --colors
+    local color_graybg = Color(50,50,50)
+    local color_bluebg = Color(10,10,200, 50)
+    local color_text = Color(120,120,255)
+    local color_text_sel = Color(160,160,100)
+    local color_ugly = Color(100,120,120)
+
+
     cam.Start3D2D(pos + ang:Up() * 8, ang, 0.1)
 
 
         -- TITLE AND MONEY AMOUNT --
-        draw.RoundedBox(0, -111, -109, 222, 218, Color(50,50,50))
-        draw.RoundedBox(0, -105, -105, 210, 210, Color(10,10,200, 50))
+        draw.RoundedBox(0, -111, -109, 222, 218, color_graybg)
+        draw.RoundedBox(0, -105, -105, 210, 210, color_bluebg)
             draw.SimpleText(
                 string.sub(self.printer_cfg.name, 1, 20),
                 "PrinterFont",
                 0,
                 -80,
-                Color(120,120,255),1,1)
+                color_text,1,1)
 
             draw.SimpleText("$"..self:GetMoneyAmount(),
                 "PrinterFont",
                 0,
                 -40,
-                Color(120,120,255), 1, 1)
+                color_text, 1, 1)
 
-        -- UPGRADE BUTTON OR OWNER NAME --
+        -- UPGRADE BUTTON --
         if(localcursorPos.x*10 >= 0 and
             localcursorPos.x*10 <= 30 and
             localcursorPos.y*10 > -75 and
             localcursorPos.y*10 < 75) then
-            draw.RoundedBox(6, -77.5, -2.5, 155, 35, Color(160,160,100))
+            draw.RoundedBox(6, -77.5, -2.5, 155, 35, color_text_sel)
             end
-        draw.RoundedBox(5, -75, 0, 150, 30, Color(100,120,120))
-        draw.SimpleText("Upgrade","PrinterButtonFont", 0,13, Color(160,160,100),1,1)
+        draw.RoundedBox(5, -75, 0, 150, 30, color_ugly)
+        draw.SimpleText("Upgrade","PrinterButtonFont", 0,13, color_text_sel,1,1)
 
         -- COLLECT BUTTON --
         if(localcursorPos.x*10 >= 40 and
             localcursorPos.x*10 <= 70 and
             localcursorPos.y*10 > -75 and
             localcursorPos.y*10 < 75) then
-            draw.RoundedBox(6, -77.5, 36.5, 155, 35, Color(160,160,100))
+            draw.RoundedBox(6, -77.5, 36.5, 155, 35, color_text_sel)
             end
-        draw.RoundedBox(5, -75, 40, 150, 30, Color(100,120,120))
-            draw.SimpleText("Collect","PrinterButtonFont", 0,53, Color(160,160,100),1,1)
+        draw.RoundedBox(5, -75, 40, 150, 30, color_ugly)
+            draw.SimpleText("Collect","PrinterButtonFont", 0,53, color_text_sel,1,1)
         
 
     cam.End3D2D()
@@ -199,6 +210,10 @@ net.Receive("entities.printertemplate.ui", function()
 
     local entity = net.ReadEntity()
 
+    --colors
+    local color_graybg = Color(40, 40, 40)
+    local color_graybg2 = Color(40, 40, 40)
+
     local PrinterPanel = vgui.Create( "DFrame" ) -- Creates the frame itself
     PrinterPanel:SetSize( ScrW() * 0.45, ScrH() * 0.5 ) -- Size of the frame
     PrinterPanel:Center() -- Position on the players screen
@@ -214,7 +229,7 @@ net.Receive("entities.printertemplate.ui", function()
             ScrH() * 0.5 * 0.05,
             w,
             ScrH() * 0.5 * 0.95,
-            Color(40, 40, 40))
+            color_graybg)
     end
 
     local pw, ph = PrinterPanel:GetSize()
@@ -312,7 +327,7 @@ net.Receive("entities.printertemplate.ui", function()
     -- if the amount of enabled upgrades is even, then the last
     -- upgrade button will be the width of 2 upgrade buttons
     --
-    -- buttonX will be width of buttons
+    -- buttonX will be width of upgrade buttons
     if countAvalUpgr % 2 == 0 then
         for k, v in pairs(UPGRADE_LOCATIONS) do
             UPGRADE_LOCATIONS[k].buttonX = pw*0.45*0.85        
@@ -344,6 +359,8 @@ net.Receive("entities.printertemplate.ui", function()
     entity.upgradeButtons = {}
     local curCfg = 1
 
+    -- Colors
+    local white_color = Color(255, 255, 255)
 
 
     for k, v in pairs(entity.printer_cfg.upgrades) do
@@ -369,7 +386,7 @@ net.Receive("entities.printertemplate.ui", function()
             entity.upgradeButtons["buyLabel"..curCfg]:SetCursor( "hand" )
 
 
-            -- starts upgrade logic
+            -- starts upgrade logic if pressed
             entity.upgradeButtons["buyLabel"..curCfg].DoClick = function()
                 net.Start("button1_logic")
                     net.WriteEntity(entity)
@@ -387,23 +404,24 @@ net.Receive("entities.printertemplate.ui", function()
                 end
 
                 draw.RoundedBox(0, 0, 0, w, h, Color(self.colorLerp, 100+self.colorLerp, 125+self.colorLerp))
-                draw.DrawText(v.displayName, "PanelButtonFont", w / 2, h * 0.07, Color(255, 255, 255), 1, 1)
+                draw.DrawText(v.displayName, "PanelButtonFont", w / 2, h * 0.07, white_color, 1, 1)
 
                 -- the fact that I need entity:GetButtonOne() requires this monstrosity 
                 if self.name == "speedUpgrade" then
                     draw.DrawText("Upgraded:"..(entity:GetButtonOne() - 1).."/5",
-                        "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
+                        "PanelButtonFont2", w / 2, h * 0.6, white_color, 1, 1)
                 elseif self.name == "storageUpgrade" then
                     draw.DrawText("Upgraded:"..(entity:GetButtonTwo() - 1).."/5",
-                        "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
+                        "PanelButtonFont2", w / 2, h * 0.6, white_color, 1, 1)
                 elseif self.name == "printUpgrade" then
                     draw.DrawText("Upgraded:"..(entity:GetButtonThree() - 1).."/5",
-                        "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
+                        "PanelButtonFont2", w / 2, h * 0.6, white_color, 1, 1)
                 elseif self.name == "lockUpgrade" then
                     draw.DrawText("Upgraded:"..(entity:GetButtonFour() - 1).."/1",
-                        "PanelButtonFont2", w / 2, h * 0.6, Color(255, 255, 255), 1, 1)
+                        "PanelButtonFont2", w / 2, h * 0.6, white_color, 1, 1)
                 end
             end
+
 
             entity.upgradeButtons["buyLabel"..curCfg].Paint = function(self, w, h)
                 if (self:IsHovered() or
@@ -456,7 +474,7 @@ end)
 -- OTHER NET SENDS AND RECEIVES --
 --------------------------------------------------------------------------------
 
--- for printer notifications for upgrades
+-- for printer notifications triggered by upgrades
 net.Receive("printermessage_hint", function()
 
     local printerMessage = net.ReadString()

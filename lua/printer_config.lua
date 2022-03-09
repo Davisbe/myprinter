@@ -6,9 +6,6 @@ arroprinter[1] = {
     ------------------------Name of the printer---------------------------------
     ["name"] = "Bronze tier printer",
 
-
-    ["health"] = 200,
-
     ["upgrades"] = {
         ["speedUpgrade"] = {
             ["enabled"] = true,

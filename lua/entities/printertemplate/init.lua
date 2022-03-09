@@ -1,4 +1,37 @@
 print("[Arro's printers] Loading template printer...")
+
+-- SQLite setup
+
+-- if (!sql.TableExists( "arrosprinters_tab" ) and !sql.TableExists( "arrosprinters_tab_upgrades" )) then
+
+--     sql.Query("DROP TABLE arrosprinters_table")
+
+--     sql.Query("CREATE TABLE arrosprinters_table (id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, name TEXT, speedUpgrade INTEGER, printUpgrade INTEGER, storageUpgrade INTEGER, healthUpgrade INTEGER, lockUpgrade INTEGER)")
+--     sql.Query("CREATE TABLE arrosprinters_tab_upgrades (id INTEGER, upgradeName TEXT, `1` INTEGER, `2` INTEGER, `3` INTEGER, `4` INTEGER, `5` INTEGER)")
+
+--     sql.Query("INSERT INTO arrosprinters_table (`id`, `name`, `speedUpgrade`, `printUpgrade`, `storageUpgrade`, `healthUpgrade`, `lockUpgrade`)VALUES (1, 'This is a printer', 1, 1, 1, 0, 1)")
+
+-- end
+
+sql.Query("DROP TABLE arrosprinters_table")
+sql.Query("DROP TABLE arrosprinters_tab_upgrades")
+sql.Query("CREATE TABLE arrosprinters_table (id INTEGER AUTO_INCREMENT PRIMARY KEY, name varchar(255), speedUpgrade INTEGER, printUpgrade INTEGER, storageUpgrade INTEGER, healthUpgrade INTEGER, lockUpgrade INTEGER)")
+sql.Query("CREATE TABLE arrosprinters_tab_upgrades (FOREIGN KEY(printerID) REFERENCES arrosprinters_table(id),
+    upgradeName VARCHAR(20),
+    `price1` INTEGER DEFAULT 0,
+    `price2` INTEGER DEFAULT 0,
+    `price3` INTEGER DEFAULT 0,
+    `price4` INTEGER DEFAULT 0,
+    `price5` INTEGER DEFAULT 0,
+    `value1` INTEGER DEFAULT 0,
+    `value2` INTEGER DEFAULT 0,
+    `value3` INTEGER DEFAULT 0,
+    `value4` INTEGER DEFAULT 0,
+    `value5` INTEGER DEFAULT 0,
+    `value6` INTEGER DEFAULT 0,)")
+sql.Query("INSERT INTO arrosprinters_table (`name`, `speedUpgrade`, `printUpgrade`, `storageUpgrade`, `healthUpgrade`, `lockUpgrade`)VALUES ('This is a printer', 1, 1, 1, 0, 1)")
+
+
 --------------------------------------------------------------------------------
 --SHARED FILES
 --------------------------------------------------------------------------------
@@ -22,6 +55,7 @@ include("shared.lua")
 --------------------------------------------------------------------------------
 --MAIN CODE
 --------------------------------------------------------------------------------
+
 
 
 --------------Used to change the printer owner from world to ply----------------
@@ -59,8 +93,8 @@ function ENT:Initialize()
     self.Locked = false -- used for the lock printer upgrade
     self.hud_timer = false -- used so player doesnt get spammed with messages
 
-    self.health = self.printer_cfg.health
-    self.IsMoneyPrinter = true -- idk couldn't be fucked to change this
+    self.health = self.printer_cfg.healthUpgrade.upgradeArray[1]
+    self.IsMoneyPrinter = true -- used for destruction
 
     if ( SERVER ) then self:PhysicsInit( SOLID_VPHYSICS ) end
 
@@ -246,14 +280,14 @@ net.Receive("button1_logic", function(len, ply)
     end
 
 
+    -- the upgrade logic for every upgrade other than lock ---------------------
     for k, v in pairs(entity.printer_cfg.upgrades) do
+
         -- If someone sends a request to upgrade a printer that has the upgrade disabled,
         -- said someone gets banned
-        if upgrade_str == k and
-            v.enabled == false then
-
+        if upgrade_str == k and v.enabled == false then
             ply:Ban(0, false)
-            ply:Kick( [[Arro's printers *script kiddie detected* - don't try to upgrade an upgrade that's disabled]] )
+            ply:Kick( [[Arro's printers - don't try to upgrade an upgrade that's disabled]] )
         end
 
 
@@ -286,6 +320,7 @@ net.Receive("button1_logic", function(len, ply)
 
         end
     end
+
 
     -- the upgrade logic for the "Lock" upgrade --------------------------------
     if upgrade_str == "lockUpgrade" then
