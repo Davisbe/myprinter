@@ -1,36 +1,5 @@
 print("[Arro's printers] Loading template printer...")
 
--- SQLite setup
-
--- if (!sql.TableExists( "arrosprinters_tab" ) and !sql.TableExists( "arrosprinters_tab_upgrades" )) then
-
---     sql.Query("DROP TABLE arrosprinters_table")
-
---     sql.Query("CREATE TABLE arrosprinters_table (id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, name TEXT, speedUpgrade INTEGER, printUpgrade INTEGER, storageUpgrade INTEGER, healthUpgrade INTEGER, lockUpgrade INTEGER)")
---     sql.Query("CREATE TABLE arrosprinters_tab_upgrades (id INTEGER, upgradeName TEXT, `1` INTEGER, `2` INTEGER, `3` INTEGER, `4` INTEGER, `5` INTEGER)")
-
---     sql.Query("INSERT INTO arrosprinters_table (`id`, `name`, `speedUpgrade`, `printUpgrade`, `storageUpgrade`, `healthUpgrade`, `lockUpgrade`)VALUES (1, 'This is a printer', 1, 1, 1, 0, 1)")
-
--- end
-
-sql.Query("DROP TABLE arrosprinters_table")
-sql.Query("DROP TABLE arrosprinters_tab_upgrades")
-sql.Query("CREATE TABLE arrosprinters_table (id INTEGER AUTO_INCREMENT PRIMARY KEY, name varchar(255), speedUpgrade INTEGER, printUpgrade INTEGER, storageUpgrade INTEGER, healthUpgrade INTEGER, lockUpgrade INTEGER)")
-sql.Query("CREATE TABLE arrosprinters_tab_upgrades (FOREIGN KEY(printerID) REFERENCES arrosprinters_table(id),
-    upgradeName VARCHAR(20),
-    `price1` INTEGER DEFAULT 0,
-    `price2` INTEGER DEFAULT 0,
-    `price3` INTEGER DEFAULT 0,
-    `price4` INTEGER DEFAULT 0,
-    `price5` INTEGER DEFAULT 0,
-    `value1` INTEGER DEFAULT 0,
-    `value2` INTEGER DEFAULT 0,
-    `value3` INTEGER DEFAULT 0,
-    `value4` INTEGER DEFAULT 0,
-    `value5` INTEGER DEFAULT 0,
-    `value6` INTEGER DEFAULT 0,)")
-sql.Query("INSERT INTO arrosprinters_table (`name`, `speedUpgrade`, `printUpgrade`, `storageUpgrade`, `healthUpgrade`, `lockUpgrade`)VALUES ('This is a printer', 1, 1, 1, 0, 1)")
-
 
 --------------------------------------------------------------------------------
 --SHARED FILES
@@ -42,9 +11,10 @@ AddCSLuaFile("shared.lua")
 --NETWORKING
 --------------------------------------------------------------------------------
 util.AddNetworkString("entities.printertemplate.ui")
-util.AddNetworkString("givemaxmoney")
 util.AddNetworkString("printermessage_hint")
 util.AddNetworkString("button1_logic")
+util.AddNetworkString("printers.create.reqeust")
+util.AddNetworkString("printers.create.answer")
 
 --------------------------------------------------------------------------------
 --INCLUDES
@@ -65,35 +35,46 @@ end)
 
 
 
-function PrinterCFG(ent_info)
-
-    local printer_id = scripted_ents.Get(ent_info:GetClass()).UniquePrinterID
-    ent_info.printer_cfg = arroprinter[printer_id]
-
-end
-
-
-
 function ENT:Initialize()
 
-    PrinterCFG(self)
+    if self:GetClass() == "printertemplate" then
+        local templatecfg = getPrintersFromSQL()
+        self.printer_cfg = templatecfg[1]
+    end
 
     self:SetModel("models/props_c17/consolebox03a.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
 
-    self:SetIsUpgradeUIopen(true) -- Is the upgrad
+    self:SetIsUpgradeUIopen(true) -- Is the upgrade UI open
     self:SetButtonOne(1)--Upgrade levels|
     self:SetButtonTwo(1)--              |
     self:SetButtonThree(1)--            |
     self:SetButtonFour(1)--             |
     self:SetButtonFive(1)--_____________|
+
+    -- More stuff needed for clientside
+    self:SetPrinterID(self.UniquePrinterID)
+    self:SetPrinterName(printer_cfg.name)
+    self:SetTotalPrinters(getPrintersAmount())
+
+    local tempUpgrades = ""
+
+    for k, v in ipairs(printer_cfg.upgrades) do
+        if v.enabled == 1 then
+            tempUpgrades = tempUpgrades
+        end
+    end
+
+    self:SetEnabledUpgrades(tempUpgrades)
+
+    -- Other stuff
     self.timer = CurTime()
     self.Locked = false -- used for the lock printer upgrade
     self.hud_timer = false -- used so player doesnt get spammed with messages
 
-    self.health = self.printer_cfg.healthUpgrade.upgradeArray[1]
+    self.health = self.printer_cfg.upgrades.healthUpgrade.upgradeArray[1]
     self.IsMoneyPrinter = true -- used for destruction
 
     if ( SERVER ) then self:PhysicsInit( SOLID_VPHYSICS ) end
@@ -121,7 +102,7 @@ function ENT:OnTakeDamage(dmg)
     self.health = (self.health) - dmg:GetDamage()
     if self.health <= 0 then
         local rnd = math.random(1, 10)
-        if rnd < 3 then
+        if rnd < 4 then
             self:BurstIntoFlames()
         else
             self:Destruct()
@@ -358,3 +339,83 @@ net.Receive("button1_logic", function(len, ply)
         end
     end
 end)
+
+function getPrintersAmount()
+
+    local printer_inf = sql.Query("SELECT * FROM arrosprinters_table")
+    return #printer_inf
+
+end
+
+
+function getPrintersFromSQL()
+    -- getting printer's info from sv.db
+    local printer_inf = sql.Query("SELECT * FROM arrosprinters_table")
+
+    -- changing the previously read info to an organised table for simplicity's sake
+    local printers = {}
+    for k, v in ipairs(printer_inf) do
+
+        local printer_upgr = sql.Query("SELECT * FROM arrosprinters_tab_upgrades WHERE printerID = "..v.id)
+
+        printers[k] = {
+            ["name"] = v.name,
+            ["id"] = v.id,
+            ["upgrades"] = {}
+        }
+
+        for i, u in ipairs(printer_upgr) do
+
+            printers[k].upgrades[u.upgradeName] = {
+                ["enabled"] = tonumber(v[u.upgradeName]),
+                ["upgradeArray"] = {tonumber(u.value1),
+                                    tonumber(u.value2),
+                                    tonumber(u.value3),
+                                    tonumber(u.value4),
+                                    tonumber(u.value5),
+                                    tonumber(u.value6)},
+                ["priceArray"] = {tonumber(u.price1),
+                                    tonumber(u.price2),
+                                    tonumber(u.price3),
+                                    tonumber(u.price4),
+                                    tonumber(u.price5)},
+                ["displayName"] = u.displayName,
+                ["maxUpgrades"] = tonumber(u.maxUpgrades)
+            }
+        end
+
+    end
+
+    return printers
+end
+
+hook.Add( "InitPostEntity", "createNewPrinters", function()
+
+    local printers = getPrintersFromSQL()
+
+    -- defining a table for the new printer tables
+    local ENT_TABLE = {}
+
+    -- looping through each printer confing and creating new tables, storing them in ENT_TABLE
+    for k, v in ipairs(printers) do
+        -- gets a fresh copy of the printertemplate each time
+        ENT_TABLE[k] = scripted_ents.Get("printertemplate")
+
+        -- new table values from the config
+        ENT_TABLE[k].PrintName = v.name
+        ENT_TABLE[k].UniquePrinterID = v.id
+        ENT_TABLE[k].Spawnable = true
+        ENT_TABLE[k].printer_cfg = v
+    end
+
+    -- registering each new printer with unique tables, so the printers don't just use
+    -- identical tables when running InitPostEntity
+    for k, v in pairs(ENT_TABLE) do
+
+        print("[Arro's printers] Loading printer - "..v.PrintName)
+        scripted_ents.Register(ENT_TABLE[k], "arrosprinter"..k)
+
+    end
+
+
+end )

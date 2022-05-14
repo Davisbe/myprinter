@@ -116,18 +116,12 @@ surface.CreateFont( "PanelButtonFont2", {
 -- PRINTER MODEL & 3D2D --
 --------------------------------------------------------------------------------
 
-function PrinterCFG(ent_info)
-
-    local printer_id = scripted_ents.Get(ent_info:GetClass()).UniquePrinterID
-    ent_info.printer_cfg = arroprinter[printer_id]
-
-end
-
 
 
 function ENT:Initialize()
+    if self:GetClass() == "printertemplate" return end
 
-    PrinterCFG(self)
+    
 
 end
 
@@ -269,11 +263,15 @@ net.Receive("entities.printertemplate.ui", function()
     local countAvalUpgr = 0     -- used to determine the upgrade window
                                 -- layout of the buttons
 
+    PrintTable(entity.printer_cfg.upgrades)
+
     for k, v in pairs(entity.printer_cfg.upgrades) do
-        if v.enabled == true then
+        if v.enabled == 1 then
             countAvalUpgr = countAvalUpgr + 1
         end
     end
+
+    print(countAvalUpgr)
 
 
     -- Defines the possible locations of the upgrade buttons
@@ -364,7 +362,7 @@ net.Receive("entities.printertemplate.ui", function()
 
 
     for k, v in pairs(entity.printer_cfg.upgrades) do
-        if v.enabled == true then
+        if v.enabled == 1 then
 
             -- Main upgrade label
             entity.upgradeButtons[curCfg] = vgui.Create("DPanel", buttonMenu)
@@ -493,23 +491,30 @@ net.Receive("printermessage_hint", function()
 end)
 
 
+hook.Add("InitPostEntity", "MakeMorePrinters", function()
+
+    local printertemp = scripted_ents.Get("printertemplate")
+    print(printertemp:GetTotalPrinters())
+    for pCount = 1, printertemp:GetTotalPrinters() do
+
+        local printertemp = scripted_ents.Get("printertemplate")
+
+        printertemp.UniquePrinterID = pCount
+        printertemp.Spawnable = true
+
+        scripted_ents.Register(printertemp, "arrosprinter"..pCount)
+    end
+
+end)
+
+
+
 --------------------------------------------------------------------------------
 -- OTHER --
 --------------------------------------------------------------------------------
 
--- Refreshes the spawnlist, so the printers are visible
-hook.Add( "InitPostEntity", "refreshSpawnMenu", function()
+hook.Add("InitPostEntity", "refreshSpawnMenu", function()
 
     hook.GetTable()["OnGamemodeLoaded"]["CreateSpawnMenu"]()
 
 end)
-
--- boop
-function testMaxMoney()
-    net.Start("givemaxmoney")
-
-        local target = LocalPlayer()
-        net.WriteEntity(target)
-
-    net.SendToServer()
-end
