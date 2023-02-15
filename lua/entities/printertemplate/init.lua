@@ -4,7 +4,6 @@ print("[Arro's printers] Loading template printer...")
 --------------------------------------------------------------------------------
 --SHARED FILES
 --------------------------------------------------------------------------------
-AddCSLuaFile("printer_config.lua")
 AddCSLuaFile("cl_init.lua")
 AddCSLuaFile("shared.lua")
 --------------------------------------------------------------------------------
@@ -13,13 +12,10 @@ AddCSLuaFile("shared.lua")
 util.AddNetworkString("entities.printertemplate.ui")
 util.AddNetworkString("printermessage_hint")
 util.AddNetworkString("button1_logic")
-util.AddNetworkString("printers.create.reqeust")
-util.AddNetworkString("printers.create.answer")
 
 --------------------------------------------------------------------------------
 --INCLUDES
 --------------------------------------------------------------------------------
-include("printer_config.lua")
 include("shared.lua")  
 
 --------------------------------------------------------------------------------
@@ -37,15 +33,15 @@ end)
 
 function ENT:Initialize()
 
-    if self:GetClass() == "printertemplate" then
-        local templatecfg = getPrintersFromSQL()
-        self.printer_cfg = templatecfg[1]
-    end
-
     self:SetModel("models/props_c17/consolebox03a.mdl")
     self:PhysicsInit(SOLID_VPHYSICS)
     self:SetMoveType(MOVETYPE_VPHYSICS)
     self:SetSolid(SOLID_VPHYSICS)
+
+    if self:GetClass() == "printertemplate" then
+        local templatecfg = getPrintersFromSQL()
+        self.printer_cfg = templatecfg[self.UniquePrinterID]
+    end
 
     self:SetIsUpgradeUIopen(true) -- Is the upgrade UI open
     self:SetButtonOne(1)--Upgrade levels|
@@ -55,19 +51,9 @@ function ENT:Initialize()
     self:SetButtonFive(1)--_____________|
 
     -- More stuff needed for clientside
-    self:SetPrinterID(self.UniquePrinterID)
-    self:SetPrinterName(printer_cfg.name)
-    self:SetTotalPrinters(getPrintersAmount())
-
-    local tempUpgrades = ""
-
-    for k, v in ipairs(printer_cfg.upgrades) do
-        if v.enabled == 1 then
-            tempUpgrades = tempUpgrades
-        end
-    end
-
-    self:SetEnabledUpgrades(tempUpgrades)
+    self:SetPrinterName(self.printer_cfg.name)
+    self.enabledUpgradesSent = false -- Have enabled upgrades been sent
+                                     -- when opening UI for first time
 
     -- Other stuff
     self.timer = CurTime()
@@ -224,11 +210,27 @@ function ENT:Use(act, call)
         localcursorPos.y*10 > -75 and
         localcursorPos.y*10 < 75 and
         self:GetIsUpgradeUIopen() == true) then
+
         net.Start("entities.printertemplate.ui")
             net.WriteEntity(self)
+            if self.enabledUpgradesSent == false then
+                net.WriteBool(self.printer_cfg.upgrades.speedUpgrade.enabled)
+                net.WriteString(self.printer_cfg.upgrades.speedUpgrade.displayName)
+                net.WriteBool(self.printer_cfg.upgrades.printUpgrade.enabled)
+                net.WriteString(self.printer_cfg.upgrades.printUpgrade.displayName)
+                net.WriteBool(self.printer_cfg.upgrades.storageUpgrade.enabled)
+                net.WriteString(self.printer_cfg.upgrades.storageUpgrade.displayName)
+                net.WriteBool(self.printer_cfg.upgrades.healthUpgrade.enabled)
+                net.WriteString(self.printer_cfg.upgrades.healthUpgrade.displayName)
+                net.WriteBool(self.printer_cfg.upgrades.lockUpgrade.enabled)
+                net.WriteString(self.printer_cfg.upgrades.lockUpgrade.displayName)
+                self.enabledUpgradesSent = true
+            end
         net.Send(call)
+
         self:SetIsUpgradeUIopen(false)
         timer.Simple(0.5,function() self:SetIsUpgradeUIopen(true) end)
+
     end
 end
 
@@ -340,7 +342,7 @@ net.Receive("button1_logic", function(len, ply)
     end
 end)
 
-function getPrintersAmount()
+local function getPrintersAmount()
 
     local printer_inf = sql.Query("SELECT * FROM arrosprinters_table")
     return #printer_inf
@@ -348,7 +350,7 @@ function getPrintersAmount()
 end
 
 
-function getPrintersFromSQL()
+local function getPrintersFromSQL()
     -- getting printer's info from sv.db
     local printer_inf = sql.Query("SELECT * FROM arrosprinters_table")
 
@@ -419,3 +421,10 @@ hook.Add( "InitPostEntity", "createNewPrinters", function()
 
 
 end )
+
+function ENT:OnDuplicated ()
+
+    self:Remove()
+    return
+
+end

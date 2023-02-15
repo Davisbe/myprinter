@@ -40,7 +40,7 @@ arroprinter[1] = {
         },
 
         ["lockUpgrade"] = {
-            ["enabled"] = false,
+            ["enabled"] = true,
             ["priceArray"] = {20000},
             ["displayName"] = "Printer Lock",
             ["maxUpgrades"] = "1",
@@ -87,7 +87,7 @@ arroprinter[2] = {
         },
 
         ["lockUpgrade"] = {
-            ["enabled"] = false,
+            ["enabled"] = true,
             ["priceArray"] = {20000},
             ["displayName"] = "Printer Lock",
             ["maxUpgrades"] = "1",

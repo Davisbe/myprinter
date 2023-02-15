@@ -9,7 +9,7 @@ ENT.Spawnable = false
 -- used to create unique printers from the temlpate
 ENT.UniquePrinterID = 1
 
--- if SERVER and !sql.TableExists("arrosprinters_table") then
+if SERVER then
     sql.Query("DROP TABLE arrosprinters_table")
     sql.Query("DROP TABLE arrosprinters_tab_upgrades")
 
@@ -58,16 +58,13 @@ ENT.UniquePrinterID = 1
 
     sql.Query("INSERT INTO arrosprinters_tab_upgrades (`printerID`, `upgradeName`, `displayName`, `maxUpgrades`, `price1`, `value1`)VALUES (2, 'lockUpgrade', 'Lock', 1, 10000, 0)")
 
--- end
+end
 
 
 function ENT:SetupDataTables()
 
     self:NetworkVar("Int", 0, "MoneyAmount")
     self:NetworkVar("String", 0, "PrinterName")
-    self:NetworkVar("String", 1, "EnabledUpgrades")
-    self:NetworkVar("Int", 1, "TotalPrinters")
-    self:NetworkVar("Entity", 1, "owning_ent")
     self:NetworkVar("Bool", 1, "IsUpgradeUIopen")
     self:NetworkVar("Int", 1, "ButtonOne")
     self:NetworkVar("Int", 2, "ButtonTwo")

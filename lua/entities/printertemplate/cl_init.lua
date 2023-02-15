@@ -1,4 +1,3 @@
-include("printer_config.lua")
 include("shared.lua")
 
 --------------------------------------------------------------------------------
@@ -119,10 +118,9 @@ surface.CreateFont( "PanelButtonFont2", {
 
 
 function ENT:Initialize()
-    if self:GetClass() == "printertemplate" return end
 
-    
-
+    self.PrintName = self:GetPrinterName()
+    self.enabledUpgrades = nil
 end
 
 
@@ -157,7 +155,7 @@ function ENT:Draw()
         draw.RoundedBox(0, -111, -109, 222, 218, color_graybg)
         draw.RoundedBox(0, -105, -105, 210, 210, color_bluebg)
             draw.SimpleText(
-                string.sub(self.printer_cfg.name, 1, 20),
+                string.sub(self:GetPrinterName().."wdqweqweweqwdwdwdwwd", 1, 19),
                 "PrinterFont",
                 0,
                 -80,
@@ -203,6 +201,31 @@ net.Receive("entities.printertemplate.ui", function()
     if IsValid(PrinterPanel) then return end
 
     local entity = net.ReadEntity()
+
+    if entity.enabledUpgrades == nil then
+        entity.enabledUpgrades = {
+            ['speedUpgrade'] = {
+                ['enabled'] = net.ReadBool(),
+                ['displayName'] = net.ReadString()
+            },
+            ['printUpgrade'] = {
+                ['enabled'] = net.ReadBool(),
+                ['displayName'] = net.ReadString()
+            },
+            ['storageUpgrade'] = {
+                ['enabled'] = net.ReadBool(),
+                ['displayName'] = net.ReadString()
+            },
+            ['healthUpgrade'] = {
+                ['enabled'] = net.ReadBool(),
+                ['displayName'] = net.ReadString()
+            },
+            ['lockUpgrade'] = {
+                ['enabled'] = net.ReadBool(),
+                ['displayName'] = net.ReadString()
+            }
+        }
+    end
 
     --colors
     local color_graybg = Color(40, 40, 40)
@@ -252,7 +275,7 @@ net.Receive("entities.printertemplate.ui", function()
 
 
     --[[
-    Everything below this is fucking shit, but I love it
+    Everything below this is just.. I wholeheartedly dislike Derma
     --]]
 
 
@@ -263,16 +286,11 @@ net.Receive("entities.printertemplate.ui", function()
     local countAvalUpgr = 0     -- used to determine the upgrade window
                                 -- layout of the buttons
 
-    PrintTable(entity.printer_cfg.upgrades)
-
-    for k, v in pairs(entity.printer_cfg.upgrades) do
-        if v.enabled == 1 then
+    for k, v in pairs(entity.enabledUpgrades) do
+        if v.enabled == true then
             countAvalUpgr = countAvalUpgr + 1
         end
     end
-
-    print(countAvalUpgr)
-
 
     -- Defines the possible locations of the upgrade buttons
     -- the values are messy because the sizes were achieved
@@ -283,14 +301,14 @@ net.Receive("entities.printertemplate.ui", function()
         ["x"] = 0,
         ["y"] = 0,
         ["buttonBGx"] = pw,
-        ["buttonBGy"] = ph*0.65/3,
+        ["buttonBGy"] = ph*13/60,
     }
 
     UPGRADE_LOCATIONS[2] = {
         ["x"] = pw * 0.55 * 0.85,
         ["y"] = 0,
         ["buttonBGx"] = pw,
-        ["buttonBGy"] = ph*0.65/3,
+        ["buttonBGy"] = ph*13/60,
     }
 
     UPGRADE_LOCATIONS[3] = {
@@ -341,10 +359,9 @@ net.Receive("entities.printertemplate.ui", function()
     end
 
 
-    -- The background of the upgrade buttons size get's changed according
+    -- The background of the upgrade buttons size gets changed according
     -- to the amount of upgrades enabled
-    buttonBG:SetSize(UPGRADE_LOCATIONS[countAvalUpgr].buttonBGx,
-        UPGRADE_LOCATIONS[countAvalUpgr].buttonBGy)
+    buttonBG:SetSize(UPGRADE_LOCATIONS[countAvalUpgr].buttonBGx, UPGRADE_LOCATIONS[countAvalUpgr].buttonBGy)
     local bw, bh = buttonMenu:GetSize()
     local bgw, bgh = buttonBG:GetSize()
 
@@ -361,8 +378,9 @@ net.Receive("entities.printertemplate.ui", function()
     local white_color = Color(255, 255, 255)
 
 
-    for k, v in pairs(entity.printer_cfg.upgrades) do
-        if v.enabled == 1 then
+
+    for k, v in pairs(entity.enabledUpgrades) do
+        if v.enabled == true then
 
             -- Main upgrade label
             entity.upgradeButtons[curCfg] = vgui.Create("DPanel", buttonMenu)
@@ -491,11 +509,15 @@ net.Receive("printermessage_hint", function()
 end)
 
 
-hook.Add("InitPostEntity", "MakeMorePrinters", function()
+--------------------------------------------------------------------------------
+-- OTHER --
+--------------------------------------------------------------------------------
+hook.Add( "InitPostEntity", "MakeMorePrinters", function()
 
+    local printamount = GetConVar( 'arrosprinters_initial_printer_count' ):GetInt()
     local printertemp = scripted_ents.Get("printertemplate")
-    print(printertemp:GetTotalPrinters())
-    for pCount = 1, printertemp:GetTotalPrinters() do
+
+    for pCount = 1, printamount do
 
         local printertemp = scripted_ents.Get("printertemplate")
 
@@ -508,11 +530,7 @@ hook.Add("InitPostEntity", "MakeMorePrinters", function()
 end)
 
 
-
---------------------------------------------------------------------------------
--- OTHER --
---------------------------------------------------------------------------------
-
+-- Refresh spawn menu so printers are shown
 hook.Add("InitPostEntity", "refreshSpawnMenu", function()
 
     hook.GetTable()["OnGamemodeLoaded"]["CreateSpawnMenu"]()
